@@ -43,6 +43,7 @@ import static org.springframework.core.Ordered.HIGHEST_PRECEDENCE;
 
 @Configuration
 public class SecurityConfig {
+    public static final String AUTHORITIES = "authorities";
 
     @Bean
     @Order(HIGHEST_PRECEDENCE)
@@ -93,8 +94,7 @@ public class SecurityConfig {
         RegisteredClient r1 = RegisteredClient.withId(UUID.randomUUID().toString())
                 .clientId("client")
                 .clientSecret("secret")
-                .scope(OidcScopes.OPENID)
-                .scope(OidcScopes.PROFILE)
+                .scopes(scs -> scs.addAll(List.of(OidcScopes.OPENID, OidcScopes.PROFILE)))
                 .redirectUri("https://springone.io/authorized")
                 .clientAuthenticationMethods(authMethods -> {
                     authMethods.add(ClientAuthenticationMethod.CLIENT_SECRET_BASIC);
@@ -111,7 +111,7 @@ public class SecurityConfig {
                         .accessTokenTimeToLive(Duration.ofHours(24))
                         .accessTokenFormat(OAuth2TokenFormat.SELF_CONTAINED)
                         .authorizationCodeTimeToLive(Duration.ofMinutes(10))
-                        .setting("authorities", List.of("create", "read", "update", "delete"))
+                        .setting(AUTHORITIES, List.of("create", "read", "update", "delete"))
                         .build())
                 .build();
         return new InMemoryRegisteredClientRepository(r1);
@@ -134,11 +134,11 @@ public class SecurityConfig {
 
             Collection<? extends GrantedAuthority> grantedAuthorities = context.getPrincipal().getAuthorities();// GrantedAuthority
 
-            context.getClaims().claim("authorities", grantedAuthorities.stream().map(GrantedAuthority::getAuthority).toList()); //List<String
+            context.getClaims().claim(AUTHORITIES, grantedAuthorities.stream().map(GrantedAuthority::getAuthority).toList()); //List<String
 
             if (context.getAuthorizationGrantType().getValue().equals(AuthorizationGrantType.CLIENT_CREDENTIALS.getValue())) {
-                List<String> authorities = context.getRegisteredClient().getTokenSettings().getSetting("authorities");
-                context.getClaims().claim("authorities", authorities);
+                List<String> authorities = context.getRegisteredClient().getTokenSettings().getSetting(AUTHORITIES);
+                context.getClaims().claim(AUTHORITIES, authorities);
             }
         };
     }
